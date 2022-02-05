@@ -11,8 +11,11 @@ namespace Sim
         private double len = 1.1; // pedulum length
         private double g = 9.81;  // gravity field strength
         int n = 2;                // number of states
+        double z = 2;                // number of states
         private double[] x;       //array of states
+        private double[] xi;      // intermediate step for slope
         private double[] f;       // right side of the equation evaulated
+        private double[,] Slope;   // Slope of the pendulem
 
         //--------------------------------------------------------------------
         // constructor
@@ -21,6 +24,8 @@ namespace Sim
         {
             x = new double[n];
             f = new double[n];
+            xi = new double[n];
+            Slope = new double[4,n];
            
             x[0] = 1.0; 
             x[1] = 0.0;
@@ -32,12 +37,57 @@ namespace Sim
         //--------------------------------------------------------------------
         public void step(double dt)
         {
-            rhsFunc(x,f);
+            //rhsFunc(x,f);
             int i;
+        
             for(i=0; i<n; ++i)
             {
-                x[i] = x[i] + f[i] * dt;
+                //x[i] = x[i] + f[i] * dt;
+                //z = f[i];
+                //Console.WriteLine($"{z.ToString()}");
+                rhsFunc(x,f);
+                if(i==0)
+                {
+                    Slope[0,i] = f[i];
+                    xi[i] = x[i] + Slope[0,i] * .5 * dt;
+                    rhsFunc(xi,f);
+                    Slope[1,i] = f[i];
+                    xi[i] = x[i] + Slope[1,i] * .5 * dt;
+                    rhsFunc(xi,f);
+                    Slope[2,i] = f[i];
+                    xi[i] = x[i] + Slope[2,i]*dt;
+                    rhsFunc(xi,f);
+                    Slope[3,i] = f[i];
+                    x[i] = x[i] + ((.1667*Slope[0,i]) + (.3333 * Slope[1,i]) + (.3333 * Slope[2,i]) + (.1667*Slope[3,i]))*dt;
+                }
+
+                if(i==1)
+                {
+                    Slope[0,i] = f[i];
+                    xi[i] = x[i] + Slope[0,i] * .5 * dt;
+                    rhsFunc(xi,f);
+                    Slope[1,i] = f[i] + .5 * dt;
+                    xi[i] = x[i] + Slope[1,i] * .5 * dt;
+                    rhsFunc(xi,f);
+                    Slope[2,i] = f[i] + .5 * dt;
+                    xi[i] = x[i] + Slope[2,i]*dt;
+                    rhsFunc(xi,f);
+                    Slope[3,i] = f[i] + dt;
+                    x[i] = x[i] + ((.1667*Slope[0,i]) + (.3333 * Slope[1,i]) + (.3333 * Slope[2,i]) + (.1667*Slope[3,i]))*dt;
+                }
+                    //Slope[0,i] = f[i];
+                    //xi[i] = x[i] + Slope[0,i] * .5 * dt;
+                    //rhsFunc(xi,f);
+                    //Slope[1,i] = f[i] * x[i] + .5 * dt;
+                    //xi[i] = x[i] + Slope[1,i] * .5 * dt;
+                    //rhsFunc(xi,f);
+                    //Slope[2,i] = f[i] * x[i] + .5 * dt;
+                    //xi[i] = x[i] + Slope[2,i]*dt;
+                    //rhsFunc(xi,f);
+                    //Slope[3,i] = f[i] * x[i] + dt;
+                    //x[i] = x[i] + ((.1667*Slope[0,i]) + (.3333 * Slope[1,i]) + (.3333 * Slope[2,i]) + (.1667*Slope[3,i]))*dt;
             }
+                               
         }
 
         //--------------------------------------------------------------------
@@ -45,8 +95,8 @@ namespace Sim
         //--------------------------------------------------------------------
         public void rhsFunc(double[] st, double[] ff)
         {
-            ff[0] = st[1];
-            ff[1] = -g/len * Math.Sin(st[0]);
+            ff[0] = st[1];    // angle dot
+            ff[1] = -g/len * Math.Sin(st[0]); // angle
         }
 
         //--------------------------------------------------------------------
